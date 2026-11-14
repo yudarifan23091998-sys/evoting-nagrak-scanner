@@ -300,54 +300,68 @@
     }
 
 
-    // QR BERHASIL DIBACA
-    async function onScanSuccess(decodedText) {
 
-      if (processing) return;
+// QR BERHASIL DIBACA
+async function onScanSuccess(decodedText) {
 
-      processing = true;
+  if (processing) return;
 
-      const token = String(decodedText || '').trim();
+  processing = true;
 
-      if (!token) {
-        processing = false;
-        return;
-      }
+  const token = String(decodedText || '').trim();
 
-      statusBox.textContent =
-        'QR berhasil dibaca. Membuka halaman voting...';
+  if (!token) {
+    processing = false;
+    return;
+  }
 
-      try {
+  statusBox.textContent =
+    'QR berhasil dibaca. Menyiapkan halaman voting...';
 
-        if (scanner && scannerRunning) {
-          await scanner.stop();
-          scannerRunning = false;
-        }
+  try {
 
-        if (scanner) {
-          await scanner.clear();
-          scanner = null;
-        }
-
-        const destination =
-          VOTING_URL +
-          '?page=voting&token=' +
-          encodeURIComponent(token);
-
-        window.location.assign(destination);
-
-      } catch (error) {
-
-        console.error(error);
-
-        statusBox.textContent =
-          'Gagal memproses QR: ' +
-          (error.message || String(error));
-
-        processing = false;
-        startButton.disabled = false;
-      }
+    // Hentikan kamera terlebih dahulu
+    if (scanner && scannerRunning) {
+      await scanner.stop();
+      scannerRunning = false;
     }
+
+    // Bersihkan instance scanner
+    if (scanner) {
+      await scanner.clear();
+      scanner = null;
+    }
+
+    // Beri waktu Safari melepaskan perangkat kamera
+    statusBox.textContent =
+      'Kamera dihentikan. Membuka halaman voting...';
+
+    await new Promise(function(resolve) {
+      setTimeout(resolve, 1500);
+    });
+
+    // Buka halaman voting
+    const destination =
+      VOTING_URL +
+      '?page=voting&token=' +
+      encodeURIComponent(token);
+
+    window.location.assign(destination);
+
+  } catch (error) {
+
+    console.error('Gagal memproses QR:', error);
+
+    statusBox.textContent =
+      'Gagal memproses QR: ' +
+      (error.message || String(error));
+
+    processing = false;
+    startButton.disabled = false;
+
+  }
+}
+
 
   </script>
 
