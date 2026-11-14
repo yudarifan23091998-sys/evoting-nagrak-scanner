@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport"
-    content="width=device-width, initial-scale=1, maximum-scale=1">
+    content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 
   <title>Scanner QR - E-Voting Nagrak</title>
 
@@ -15,259 +15,341 @@
       box-sizing: border-box;
     }
 
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
       margin: 0;
-      padding: 20px;
-      background: #f8fafc;
-      color: #1e293b;
+      padding: 0;
+      overflow: hidden;
+      background: #0f172a;
+      color: white;
       font-family: Arial, sans-serif;
     }
 
-    .container {
-      max-width: 500px;
-      margin: 25px auto;
-      background: white;
-      padding: 22px;
-      border-radius: 18px;
-      border: 1px solid #e2e8f0;
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+
+    .header {
+      flex-shrink: 0;
       text-align: center;
+      padding: 12px 16px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      background: #172554;
+      border-bottom: 1px solid rgba(255,255,255,.12);
     }
 
-    h1 {
-      font-size: 23px;
-      margin-bottom: 8px;
+    .header h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: .4px;
     }
 
-    p {
-      color: #64748b;
-      font-size: 14px;
-      line-height: 1.6;
+    .header p {
+      margin: 5px 0 0;
+      color: #cbd5e1;
+      font-size: 12px;
+      line-height: 1.4;
+    }
+
+    .scanner-area {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 10px;
+      gap: 12px;
     }
 
     #reader {
       width: 100%;
-      margin: 20px auto;
+      height: 100%;
+      max-width: 900px;
+      min-height: 0;
       overflow: hidden;
-      border-radius: 12px;
+      border: 0;
+      border-radius: 14px;
+      background: #020617;
+    }
+
+    #reader video {
+      object-fit: cover !important;
+    }
+
+    #reader img {
+      display: none;
+    }
+
+    #reader__scan_region {
+      background: #020617;
+    }
+
+    #reader__dashboard {
+      display: none !important;
+    }
+
+    .controls {
+      width: 100%;
+      max-width: 500px;
+      flex-shrink: 0;
+      text-align: center;
     }
 
     button {
       width: 100%;
       padding: 16px;
-      margin-top: 10px;
       border: 0;
       border-radius: 12px;
       background: #2563eb;
       color: white;
       font-size: 16px;
       font-weight: bold;
+      cursor: pointer;
     }
 
     button:disabled {
       opacity: .5;
     }
 
+    button.hidden {
+      display: none;
+    }
+
     .status {
-      background: #f1f5f9;
+      width: 100%;
+      margin-top: 10px;
+      padding: 11px 14px;
       border-radius: 10px;
-      padding: 13px;
-      margin-top: 15px;
+      background: rgba(255,255,255,.1);
+      color: #e2e8f0;
       font-size: 13px;
-      line-height: 1.6;
+      line-height: 1.5;
       overflow-wrap: anywhere;
     }
 
     .footer {
-      margin-top: 20px;
+      flex-shrink: 0;
+      padding: 9px 10px;
+      padding-bottom: max(9px, env(safe-area-inset-bottom));
+      text-align: center;
       color: #94a3b8;
-      font-size: 12px;
+      font-size: 11px;
+      background: #172554;
+    }
+
+    @media (orientation: landscape) {
+      .header {
+        padding: 7px 12px;
+      }
+
+      .header h1 {
+        font-size: 17px;
+      }
+
+      .header p {
+        margin-top: 2px;
+        font-size: 11px;
+      }
+
+      .scanner-area {
+        padding: 6px 12px;
+        gap: 6px;
+      }
+
+      .controls {
+        max-width: 420px;
+      }
+
+      button {
+        padding: 11px;
+      }
+
+      .status {
+        margin-top: 6px;
+        padding: 7px;
+      }
+
+      .footer {
+        padding: 5px;
+      }
     }
   </style>
 </head>
 
 <body>
 
-<div class="container">
+  <header class="header">
+    <h1>SCANNER QR E-VOTING</h1>
+    <p>Panitia Pilkades Desa Nagrak — Kecamatan Ciater</p>
+  </header>
 
-  <h1>Scanner QR E-Voting</h1>
+  <main class="scanner-area">
+    <div id="reader"></div>
 
-  <p>
-    Panitia Pilkades Desa Nagrak<br>
-    Kecamatan Ciater
-  </p>
+    <div class="controls">
+      <button id="startButton" onclick="startScanner()">
+        AKTIFKAN KAMERA BELAKANG
+      </button>
 
-  <div id="reader"></div>
+      <div id="status" class="status">
+        Kamera belum diaktifkan.
+      </div>
+    </div>
+  </main>
 
-  <button id="startButton" onclick="startScanner()">
-    Aktifkan Kamera Belakang
-  </button>
-
-  <div id="status" class="status">
-    Kamera belum diaktifkan.
-  </div>
-
-  <div class="footer">
+  <footer class="footer">
     E-Voting Pilkades Nagrak — Mode Simulasi
-  </div>
+  </footer>
 
-</div>
+  <script>
 
-<script>
+    // URL WEB APP GOOGLE APPS SCRIPT
+    const VOTING_URL =
+      'https://script.google.com/macros/s/AKfycbxJkVsTG1ZdFtl_R3PtjfEocsyaF0ZPeSffQpClcl7Wy9-MlkQjolvFgIJr3oST7yms/exec';
 
-  // URL WEB APP GOOGLE APPS SCRIPT
-  const VOTING_URL =
-    'https://script.google.com/macros/s/AKfycbxJkVsTG1ZdFtl_R3PtjfEocsyaF0ZPeSffQpClcl7Wy9-MlkQjolvFgIJr3oST7yms/exec';
+    let scanner = null;
+    let scannerRunning = false;
+    let processing = false;
 
-  let scanner = null;
-  let scannerRunning = false;
-  let processing = false;
-
-  const statusBox = document.getElementById('status');
-  const startButton = document.getElementById('startButton');
+    const statusBox = document.getElementById('status');
+    const startButton = document.getElementById('startButton');
 
 
-  // MEMULAI KAMERA
-  async function startScanner() {
+    // MEMULAI KAMERA
+    async function startScanner() {
 
-    if (scannerRunning || processing) return;
+      if (scannerRunning || processing) return;
 
-    startButton.disabled = true;
+      startButton.disabled = true;
 
-    statusBox.textContent = 'Memeriksa akses kamera...';
+      statusBox.textContent = 'Memeriksa akses kamera...';
 
-    try {
+      try {
 
-      if (!window.isSecureContext) {
-        throw new Error(
-          'Halaman harus dibuka melalui HTTPS.'
-        );
-      }
-
-      if (!navigator.mediaDevices ||
-          !navigator.mediaDevices.getUserMedia) {
-        throw new Error(
-          'Browser tidak mendukung akses kamera.'
-        );
-      }
-
-      if (!window.Html5Qrcode) {
-        throw new Error(
-          'Library scanner gagal dimuat. Periksa koneksi internet.'
-        );
-      }
-
-      scanner = new Html5Qrcode('reader');
-
-      statusBox.textContent =
-        'Meminta izin kamera belakang iPad...';
-
-      await scanner.start(
-        { facingMode: 'environment' },
-        {
-          fps: 10,
-          qrbox: function(width, height) {
-
-            const size = Math.floor(
-              Math.min(width, height) * 0.7
-            );
-
-            return {
-              width: Math.min(size, 280),
-              height: Math.min(size, 280)
-            };
-
-          },
-          aspectRatio: 1
-        },
-        onScanSuccess,
-        function() {}
-      );
-
-      scannerRunning = true;
-
-      statusBox.textContent =
-        'Kamera aktif. Arahkan ke QR Code pemilih.';
-
-      startButton.classList.add('hidden');
-
-    } catch (error) {
-
-      console.error('Scanner error:', error);
-
-      statusBox.textContent =
-        'Gagal mengaktifkan kamera: ' +
-        (error.message || error.name || String(error));
-
-      startButton.disabled = false;
-
-      if (scanner) {
-        try {
-          await scanner.clear();
-        } catch (e) {
-          console.log(e);
+        if (!window.isSecureContext) {
+          throw new Error('Halaman harus dibuka melalui HTTPS.');
         }
-      }
 
-      scanner = null;
-      scannerRunning = false;
+        if (!navigator.mediaDevices ||
+            !navigator.mediaDevices.getUserMedia) {
+          throw new Error('Browser tidak mendukung akses kamera.');
+        }
 
-    }
+        if (!window.Html5Qrcode) {
+          throw new Error('Library scanner gagal dimuat. Periksa koneksi internet.');
+        }
 
-  }
+        scanner = new Html5Qrcode('reader');
 
+        statusBox.textContent =
+          'Meminta izin kamera belakang iPad...';
 
-  // QR BERHASIL DIBACA
-  async function onScanSuccess(decodedText) {
+        await scanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: function(width, height) {
+              const size = Math.floor(
+                Math.min(width, height) * 0.7
+              );
 
-    if (processing) return;
+              return {
+                width: Math.min(size, 280),
+                height: Math.min(size, 280)
+              };
+            },
+            aspectRatio: 1
+          },
+          onScanSuccess,
+          function() {}
+        );
 
-    processing = true;
+        scannerRunning = true;
 
-    const token = String(decodedText || '').trim();
+        statusBox.textContent =
+          'Kamera aktif. Arahkan ke QR Code pemilih.';
 
-    if (!token) {
-      processing = false;
-      return;
-    }
+        startButton.classList.add('hidden');
 
-    statusBox.textContent =
-      'QR berhasil dibaca. Membuka halaman voting...';
+      } catch (error) {
 
-    try {
+        console.error('Scanner error:', error);
 
-      if (scanner && scannerRunning) {
-        await scanner.stop();
+        statusBox.textContent =
+          'Gagal mengaktifkan kamera: ' +
+          (error.message || error.name || String(error));
+
+        startButton.disabled = false;
+
+        if (scanner) {
+          try {
+            await scanner.clear();
+          } catch (e) {
+            console.log(e);
+          }
+        }
+
+        scanner = null;
         scannerRunning = false;
       }
-
-      if (scanner) {
-        await scanner.clear();
-        scanner = null;
-      }
-
-      const destination =
-        VOTING_URL +
-        '?page=voting&token=' +
-        encodeURIComponent(token);
-
-      window.location.assign(destination);
-
-    } catch (error) {
-
-      console.error(error);
-
-      statusBox.textContent =
-        'Gagal memproses QR: ' +
-        (error.message || String(error));
-
-      processing = false;
-      startButton.disabled = false;
-
     }
 
-  }
 
-</script>
+    // QR BERHASIL DIBACA
+    async function onScanSuccess(decodedText) {
+
+      if (processing) return;
+
+      processing = true;
+
+      const token = String(decodedText || '').trim();
+
+      if (!token) {
+        processing = false;
+        return;
+      }
+
+      statusBox.textContent =
+        'QR berhasil dibaca. Membuka halaman voting...';
+
+      try {
+
+        if (scanner && scannerRunning) {
+          await scanner.stop();
+          scannerRunning = false;
+        }
+
+        if (scanner) {
+          await scanner.clear();
+          scanner = null;
+        }
+
+        const destination =
+          VOTING_URL +
+          '?page=voting&token=' +
+          encodeURIComponent(token);
+
+        window.location.assign(destination);
+
+      } catch (error) {
+
+        console.error(error);
+
+        statusBox.textContent =
+          'Gagal memproses QR: ' +
+          (error.message || String(error));
+
+        processing = false;
+        startButton.disabled = false;
+      }
+    }
+
+  </script>
 
 </body>
 </html>
