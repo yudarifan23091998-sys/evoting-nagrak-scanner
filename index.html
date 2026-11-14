@@ -348,31 +348,7 @@
         startButton.disabled = false;
       }
     }
-    window.addEventListener('load', async function() {
-    
-      try {
-        // Periksa status izin kamera
-        if (navigator.permissions &&
-            navigator.permissions.query) {
-    
-          const permission = await navigator.permissions.query({
-            name: 'camera'
-          });
-    
-          if (permission.state === 'granted') {
-            startScanner();
-            return;
-          }
-        }
-    
-      } catch (error) {
-        console.log('Pemeriksaan izin tidak didukung Safari.');
-      }
-    
-      // Coba aktifkan kamera
-      startScanner();
-    
-    });
+
   </script>
 
 </body>
