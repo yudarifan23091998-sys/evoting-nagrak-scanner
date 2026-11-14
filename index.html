@@ -189,9 +189,11 @@
   </header>
 
   <main class="scanner-area">
+
     <div id="reader"></div>
 
     <div class="controls">
+
       <button id="startButton" onclick="startScanner()">
         AKTIFKAN KAMERA BELAKANG
       </button>
@@ -199,7 +201,9 @@
       <div id="status" class="status">
         Kamera belum diaktifkan.
       </div>
+
     </div>
+
   </main>
 
   <footer class="footer">
@@ -208,7 +212,10 @@
 
   <script>
 
-    // URL WEB APP GOOGLE APPS SCRIPT
+    // =====================================
+    // KONFIGURASI
+    // =====================================
+
     const VOTING_URL =
       'https://script.google.com/macros/s/AKfycbxJkVsTG1ZdFtl_R3PtjfEocsyaF0ZPeSffQpClcl7Wy9-MlkQjolvFgIJr3oST7yms/exec';
 
@@ -220,40 +227,91 @@
     const startButton = document.getElementById('startButton');
 
 
+    // =====================================
+    // FUNGSI MEMBERSIHKAN SCANNER
+    // =====================================
+
+    async function cleanupScanner() {
+
+      if (!scanner) {
+        scannerRunning = false;
+        return;
+      }
+
+      try {
+
+        if (scannerRunning) {
+          await scanner.stop();
+        }
+
+      } catch (error) {
+        console.log('Stop scanner:', error);
+      }
+
+      scannerRunning = false;
+
+      try {
+        await scanner.clear();
+      } catch (error) {
+        console.log('Clear scanner:', error);
+      }
+
+      scanner = null;
+    }
+
+
+    // =====================================
     // MEMULAI KAMERA
+    // HANYA MELALUI TOMBOL
+    // =====================================
+
     async function startScanner() {
 
       if (scannerRunning || processing) return;
 
       startButton.disabled = true;
 
-      statusBox.textContent = 'Memeriksa akses kamera...';
+      statusBox.textContent =
+        'Memeriksa akses kamera...';
 
       try {
 
         if (!window.isSecureContext) {
-          throw new Error('Halaman harus dibuka melalui HTTPS.');
+          throw new Error(
+            'Halaman harus dibuka melalui HTTPS.'
+          );
         }
 
         if (!navigator.mediaDevices ||
             !navigator.mediaDevices.getUserMedia) {
-          throw new Error('Browser tidak mendukung akses kamera.');
+          throw new Error(
+            'Browser tidak mendukung akses kamera.'
+          );
         }
 
         if (!window.Html5Qrcode) {
-          throw new Error('Library scanner gagal dimuat. Periksa koneksi internet.');
+          throw new Error(
+            'Library scanner gagal dimuat. Periksa koneksi internet.'
+          );
         }
+
+        // Bersihkan instance lama jika masih ada
+        await cleanupScanner();
 
         scanner = new Html5Qrcode('reader');
 
         statusBox.textContent =
-          'Meminta izin kamera belakang iPad...';
+          'Mengaktifkan kamera belakang iPad...';
 
         await scanner.start(
+
           { facingMode: 'environment' },
+
           {
             fps: 10,
+
             qrbox: function(width, height) {
+
               const size = Math.floor(
                 Math.min(width, height) * 0.7
               );
@@ -263,10 +321,14 @@
                 height: Math.min(size, 280)
               };
             },
+
             aspectRatio: 1
           },
+
           onScanSuccess,
+
           function() {}
+
         );
 
         scannerRunning = true;
@@ -280,88 +342,78 @@
 
         console.error('Scanner error:', error);
 
+        await cleanupScanner();
+
         statusBox.textContent =
           'Gagal mengaktifkan kamera: ' +
           (error.message || error.name || String(error));
 
         startButton.disabled = false;
 
-        if (scanner) {
-          try {
-            await scanner.clear();
-          } catch (e) {
-            console.log(e);
-          }
-        }
+        startButton.classList.remove('hidden');
 
-        scanner = null;
-        scannerRunning = false;
       }
     }
 
 
+    // =====================================
+    // QR BERHASIL DIBACA
+    // =====================================
 
-// QR BERHASIL DIBACA
-async function onScanSuccess(decodedText) {
+    async function onScanSuccess(decodedText) {
 
-  if (processing) return;
+      if (processing) return;
 
-  processing = true;
+      processing = true;
 
-  const token = String(decodedText || '').trim();
+      const token = String(decodedText || '').trim();
 
-  if (!token) {
-    processing = false;
-    return;
-  }
+      if (!token) {
+        processing = false;
+        return;
+      }
 
-  statusBox.textContent =
-    'QR berhasil dibaca. Menyiapkan halaman voting...';
+      startButton.classList.add('hidden');
 
-  try {
+      statusBox.textContent =
+        'QR berhasil dibaca. Menyiapkan halaman voting...';
 
-    // Hentikan kamera terlebih dahulu
-    if (scanner && scannerRunning) {
-      await scanner.stop();
-      scannerRunning = false;
+      try {
+
+        // Hentikan dan bersihkan kamera
+        await cleanupScanner();
+
+        statusBox.textContent =
+          'Kamera dihentikan. Membuka halaman voting...';
+
+        // Beri waktu Safari melepaskan perangkat kamera
+        await new Promise(function(resolve) {
+          setTimeout(resolve, 1500);
+        });
+
+        // Arahkan ke halaman voting
+        const destination =
+          VOTING_URL +
+          '?page=voting&token=' +
+          encodeURIComponent(token);
+
+        window.location.assign(destination);
+
+      } catch (error) {
+
+        console.error('Gagal memproses QR:', error);
+
+        statusBox.textContent =
+          'Gagal memproses QR: ' +
+          (error.message || String(error));
+
+        processing = false;
+
+        startButton.disabled = false;
+        startButton.classList.remove('hidden');
+
+      }
     }
-
-    // Bersihkan instance scanner
-    if (scanner) {
-      await scanner.clear();
-      scanner = null;
-    }
-
-    // Beri waktu Safari melepaskan perangkat kamera
-    statusBox.textContent =
-      'Kamera dihentikan. Membuka halaman voting...';
-
-    await new Promise(function(resolve) {
-      setTimeout(resolve, 1500);
-    });
-
-    // Buka halaman voting
-    const destination =
-      VOTING_URL +
-      '?page=voting&token=' +
-      encodeURIComponent(token);
-
-    window.location.assign(destination);
-
-  } catch (error) {
-
-    console.error('Gagal memproses QR:', error);
-
-    statusBox.textContent =
-      'Gagal memproses QR: ' +
-      (error.message || String(error));
-
-    processing = false;
-    startButton.disabled = false;
-
-  }
-}
-
 
   </script>
 
